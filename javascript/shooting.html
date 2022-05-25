@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>shooting</title>
+
+
+</head>
+<body>
+    
+    
+
+    <script>
+
+        const canvas = document.createElement("canvas");
+        var context = canvas.getContext("2d");
+        canvas.width = 600;
+        canvas.height = 600;
+        canvas.setAttribute("style","display:block;margin:auto;background-color:#ddd");
+        document.body.appendChild(canvas);
+        
+
+        class Vec2{
+            constructor(x,y){
+                this.x = x;
+                this.y = y;
+            }
+
+            add(b){
+                let a = this;
+                return new Vec2(a.x + b.x,a.y + b.y); 
+            }
+
+            sub(b){
+                let a = this;
+                return new Vec2(a.x - b.x,a.y - b.y);
+            }
+
+            mul(s){
+                return new Vec2(s*this.x,s*this.y);
+            }
+
+            mag(){
+                return Math.sqrt(this.x ** 2 + this.y ** 2);
+            }
+
+            magSet(s){
+                return this.mul(s/this.mag());
+            }
+
+            magAdded(s){
+                return this.mul(1 + s/this.mag());
+            }
+
+            rotated(rad){
+                return new Vec2(
+                    this.x * Math.cos(rad) - this.y * Math.sin(rad),
+                    this.x * Math.sin(rad) + this.y * Math.cos(rad)
+                )
+            }
+
+            normalized(){
+                return this.mul(1/this.mag());
+            }
+
+            copy(){
+                return new Vec2(this.x,this.y);
+            }
+
+            equals(b){
+                let a = this;
+                return a.x === b.x && a.y === b.y;
+            }
+
+        }
+        
+        class Beam {
+            constructor(x,y,dx,dy){
+
+                this.x = x;
+                this.y = y;
+                this.width = 10;
+                this.height = 10;
+                this.dx = dx;
+                this.dy = dy;
+
+                
+            }
+
+                move (dx,dy) {
+                this.dx = dx;
+                this.dy = dy;
+                }
+
+                update() {
+                    context.fillStyle = "rgb(250,128,114)";
+                    context.fillRect(this.x,this.y,this.width,this.height);
+                    context.fill();
+                    this.x += this.dx;
+                    this.y += this.dy;
+                
+                   
+                }
+
+                
+        }
+
+        class BeamRed extends Beam{
+            update1() {
+                    context.fillStyle = "rgb(255,0,0)";
+                    context.fillRect(this.x,this.y,this.width,this.height);
+                    context.fill();
+                    this.x += this.dx;
+                    this.y += this.dy;
+                
+                   
+                }
+        }
+
+        let enemyHaveRedBeam = [];
+
+        
+
+        const collide = (obj1,obj2) => {
+            return  obj1.x < obj2.x + obj2.width &&
+            obj2.x < obj1.x + obj1.width &&
+            obj1.y < obj2.y + obj2.height &&
+            obj2.y < obj1.y + obj1.height; 
+        }
+
+        let rocketKind = [];
+        var rocket1 = new Object();
+        rocket1.img = new Image();
+        rocket1.img.src = "./img/blue.jpeg";
+        rocket1.x = canvas.width/2 - 60;
+        rocket1.y = canvas.height - 100;
+        rocket1.move = 0;
+        rocket1.beam = [];
+        rocket1.beam1 = [];
+        rocket1.beam2 = [];
+        rocket1.width = 50
+        rocket1.height = 50
+        rocket1.color = "blue";
+
+        var rocket2 = new Object();
+        rocket2.img = new Image();
+        rocket2.img.src = "./img/red.jpeg";
+        rocket2.x = canvas.width/2 - 60;
+        rocket2.y = canvas.height - 100;
+        rocket2.move = 0;
+        rocket2.beam = [];
+        rocket2.beam1 = [];
+        rocket2.beam2 = [];
+        rocket2.width = 50
+        rocket2.height = 50
+        rocket2.color = "red";
+
+        rocketKind.push(rocket1);
+        rocketKind.push(rocket2);
+        let rocket;
+
+        var rocketIsAlive = "true";
+
+        var key = new Object();
+        key.up = false;
+        key.down = false;
+        key.right = false;
+        key.left = false;
+        key.push = '';  
+        key.space = false;
+
+
+
+        const data = [
+          [0,1,0,1,1],
+          [0,0,0,0,0],
+          [1,2,2,2,2]
+        ]
+
+        let enemyInfo = [];
+        let enemyInfo1 = [];
+
+        let img0 = "./img/enemy0.jpg";
+        let img1 = "./img/enemy1.jpg";
+        let img2 = "./img/enemy2.png";
+        let imgUpGrade = "./img/item.png";
+        let enemyShotTiming = 100;
+        let enemyNum = 3;
+        let upGrade ;
+        let enemytrans = [];
+        var upGradeCatch = "false";
+
+
+        
+        class Enemy{
+
+            constructor(x,y,dx,dy,hp,img){
+
+                this.x = x;
+                this.y = y;
+                this.dx = dx;
+                this.dy = dy;
+                this.hp = hp;
+                this.img = new Image();
+                this.img.src = img;
+                this.width = 40
+                this.height = 40
+                this.beam = [];
+                
+                
+
+            }
+
+            move (dx,dy) {
+                this.dx = dx;
+                this.dy = dy;
+            }
+
+            update() {
+                
+                context.drawImage(this.img,this.x, this.y,this.width,this.height);
+                this.x += this.dx;
+                this.y += this.dy;
+            }
+        }
+
+        class Enemy0 extends Enemy{
+
+            constructor(x,y,dx,dy,hp,img){
+                super(x,y,dx,dy,hp,img);
+                this.range = null; 
+            }
+
+            update(){
+
+                context.drawImage(this.img,this.x, this.y,this.width,this.height);
+                this.x += this.dx;
+                this.y += this.dy;
+                this.range += this.dy;
+                let a = Math.floor( Math.random() * 500 );
+                if(this.range > a){
+                    this.dx = 0;
+                    this.dy = 0;
+                }
+
+                
+
+            }
+
+        }
+
+        class Enemy2 extends Enemy{
+            update(){
+                context.drawImage(this.img,this.x, this.y,this.width,this.height);
+                this.x += this.dx;
+                this.y += this.dy;
+                if(this.x > 600 || this.x < 0){
+                    this.dx *= -1;
+                }
+
+                if(this.y > 600 || this.y < 0){
+                    this.dy *= -1;
+                }
+
+            }
+        }
+
+        
+
+        
+
+        
+        const init = () => {
+            for(let i= 0; i < data.length; i++){
+                for(let j = 0; j < data[i].length; j++){
+                    if(data[i][j] === 0) {
+                    
+                        let a = Math.floor( Math.random() * 600 );
+                        enemyInfo.push(
+                            new Enemy0(a,0,i,j+2,j,img0)
+                        );
+                        
+                    }
+
+                    if(data[i][j] === 1) {
+                        enemyInfo.push(
+                            new Enemy2(i+j + 100,0,j,j,j,img1)
+                        );
+                        
+                    }   
+
+                    if(data[i][j] === 2) {
+                        enemyInfo1.push(
+                            new Enemy2(i+j+250,0,j,j,j,img2)
+                        );
+                        
+                    }     
+
+
+                }
+            }
+
+
+            upGrade = new Enemy(100,0,0,1,1,imgUpGrade);
+
+            for(let q = 0; q < enemyNum; q++) {
+                enemytrans.push(enemyInfo.pop());
+            }
+
+            for(let q = 0; q < enemyNum; q++) {
+                enemyHaveRedBeam.push(enemyInfo1.pop());
+            }
+
+            rocket = rocketKind[1];
+        }
+
+        
+        function main() {
+
+
+            context.fillStyle = "rgb( 0, 0, 0 )";
+	        context.fillRect(0, 0, 640, 640);
+            
+            
+
+            upGrade.update();
+            context.drawImage(rocket.img,rocket.x, rocket.y,rocket.width,rocket.height);
+            if (rocket.beam.length !== 0){
+                
+                rocket.beam.forEach(element => {
+                    element.update();
+                    
+                });
+            }
+          
+            
+
+            
+                for(let enemy of enemytrans) {
+                    if(enemy === null){
+                        continue;
+                    }
+                    enemy.update();
+                    enemyAttack = Math.floor( Math.random() * (enemyNum) );
+                    enemyAttackInterval = Math.floor( Math.random() * 10001 );
+                    if ((enemyAttackInterval % enemyShotTiming)  === 0 ) {
+
+                        let a = new Vec2(enemy.x,enemy.y );
+                        let b = new Vec2(rocket.x + 47,rocket.y + 20);
+                        let c;
+                        let d;
+                        b = b.sub(a).normalized().mul(5);
+
+                        c = b.rotated(Math.PI/6);
+                        d = b.rotated(-Math.PI/6);
+                        enemy.beam.push(new Beam(enemy.x + 30,enemy.y  + 20,b.x,b.y ));
+                        enemy.beam.push(new Beam(enemy.x+ 30,enemy.y+ 20,c.x,c.y ));
+                        enemy.beam.push(new Beam(enemy.x+ 30,enemy.y+ 20,d.x,d.y ));
+                        
+                    }
+
+                    if (enemy.beam.length !== 0){
+                        
+                        enemy.beam.forEach(element => {
+                        element.update();
+                    
+                        });
+                    }
+                    
+                }
+                for(let enemy of enemyHaveRedBeam) {
+                    if(enemy === null){
+                        continue;
+                    }
+                    enemy.update();
+                    enemyAttack = Math.floor( Math.random() * (enemyNum) );
+                    enemyAttackInterval = Math.floor( Math.random() * 10001 );
+                    if ((enemyAttackInterval % enemyShotTiming)  === 0 ) {
+
+                        let a = new Vec2(enemy.x,enemy.y );
+                        let b = new Vec2(rocket.x + 47,rocket.y + 20);
+                        let c;
+                        let d;
+                        b = b.sub(a).normalized().mul(5);
+
+                        c = b.rotated(Math.PI/6);
+                        d = b.rotated(-Math.PI/6);
+                        enemy.beam.push(new BeamRed(enemy.x + 30,enemy.y  + 20,b.x,b.y ));
+                        enemy.beam.push(new BeamRed(enemy.x+ 30,enemy.y+ 20,c.x,c.y ));
+                        enemy.beam.push(new BeamRed(enemy.x+ 30,enemy.y+ 20,d.x,d.y ));
+                        
+                    }
+
+                    if (enemy.beam.length !== 0){
+                        
+                        enemy.beam.forEach(element => {
+                        element.update1();
+                    
+                        });
+                    }
+                    
+                }
+
+                if (collide(rocket,upGrade)){
+                    upGradeCatch = "true";
+                 }
+                        
+
+                 
+                for (let i = 0; i < enemytrans.length; i++) {
+                    if(enemytrans[i] === null){
+                        continue;
+                    }
+                    for (let c = 0; c < rocket.beam.length; c++) {
+                      
+                          if (collide(rocket.beam[c],enemytrans[i])){
+                                if(enemyInfo.length !== 0){    
+                                    enemytrans[i] = enemyInfo.pop();
+                                    
+                                }else{
+                                    enemytrans[i] = null;
+                                }
+                                break;
+                            }
+                        
+                    }
+
+                    for (let beam of enemytrans[i].beam) {
+                      
+                      if (rocket.color === "red" & collide(beam,rocket)){
+                            rocketIsAlive = "false";
+                            break;
+                        }
+                    
+                    }
+
+                }
+
+                for (let i = 0; i < enemyHaveRedBeam.length; i++) {
+                    if(enemyHaveRedBeam[i] === null){
+                        continue;
+                    }
+                    for (let c = 0; c < rocket.beam.length; c++) {
+                      
+                          if (collide(rocket.beam[c],enemyHaveRedBeam[i])){
+                                if(enemyHaveRedBeam.length !== 0){    
+                                    enemyHaveRedBeam[i] = enemyHaveRedBeam.pop();
+                                    
+                                }else{
+                                    enemyHaveRedBeam[i] = null;
+                                }
+                                break;
+                            }
+                        
+                    }
+
+                    for (let beam of enemyHaveRedBeam[i].beam) {
+                      
+                      if (rocket.color === "blue" & collide(beam,rocket)){
+                            rocketIsAlive = "false";
+                            break;
+                        }
+                    
+                    }
+
+                }
+
+                
+                
+            
+            addEventListener("keydown",keydownfunc,false);
+            addEventListener("keyup",keyupfunc,false);
+
+            if(rocket.move === 0) {
+                if (key.left === true) {
+                    rocket.move = 32;
+                    key.push = "left";
+                }
+
+                if (key.up === true) {
+                    rocket.move = 32;
+                    key.push = "up";
+                }
+
+                if (key.right === true) {
+                    rocket.move = 32;
+                    key.push = "right";
+                }
+
+                if (key.down === true) {
+                    rocket.move = 32;
+                    key.push = "down";
+                }
+
+                if (key.space === true) {
+                    rocket.move = 32;
+                    key.push = "space";
+                }
+
+            }
+
+            if (rocket.move > 0) {
+                rocket.move -= 4;
+                if (key.push === "left") rocket.x -= 4;
+                if (key.push === "up") rocket.y -= 4;
+                if (key.push === "right") rocket.x += 4;
+                if (key.push === "down") rocket.y += 4;
+                
+
+            }
+            var requestId = requestAnimationFrame(main);
+            if(rocketIsAlive === "false"){
+                rocket = null;
+                window.cancelAnimationFrame(requestId);
+            }
+            
+        }
+
+        init();
+        main();
+
+        
+        function keydownfunc(event) {
+            var key_code = event.keyCode;
+            if(key_code === 67){
+                rocketKind[1].x = rocket.x;
+                rocketKind[1].y = rocket.y;
+                rocket = rocketKind[1];
+            }
+            if(key_code === 86){
+                rocketKind[0].x = rocket.x;
+                rocketKind[0].y = rocket.y;
+                rocket = rocketKind[0];
+            }
+
+            if(key_code === 37) key.left = true;
+            if(key_code === 38) key.up = true;
+            if(key_code === 39) key.right = true;
+            if(key_code === 40) key.down = true;
+            if(key_code === 32) {
+
+                if(upGradeCatch === "true"){
+
+                let a = new Vec2(0,-5);
+                let b = new Vec2(0,-5);
+                a = a.normalized().mul(5);
+                b = b.normalized().mul(5);
+
+                a = a.rotated(Math.PI/6);
+                b = b.rotated(-Math.PI/6);
+                
+
+                rocket.beam.push(new Beam(rocket.x + 20,rocket.y- 5,a.x,a.y));
+                rocket.beam.push(new Beam(rocket.x + 20,rocket.y- 5,b.x,b.y));
+
+                }
+                
+                rocket.beam.push(new Beam(rocket.x + 20,rocket.y - 5,0,-5));
+            }
+            event.preventDefault();
+  
+           
+        }
+
+        function keyupfunc(event) {
+            var key_code = event.keyCode;
+            if(key_code === 37) key.left = false;
+            if(key_code === 38) key.up = false;
+            if(key_code === 39) key.right = false;
+            if(key_code === 40) key.down = false;
+            if(key_code === 32) key.space = false;
+        }
+
+    
+    </script>
+</body>
+</html>
