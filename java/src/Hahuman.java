@@ -79,7 +79,7 @@ public class Hahuman {
         Collections.sort(freqCopy);
 
     }
-    
+    System.out.println("hello");
 
     }
 
